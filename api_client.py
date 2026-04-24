@@ -155,7 +155,7 @@ class GatekeeperOMClient:
             if node_id and entity_type:
                 try:
                     # Step B: Fetch full entity defensively
-                    endpoint = f"/{entity_type}s/{node_id}?fields=tags,tier"
+                    endpoint = f"/{entity_type}s/{node_id}?fields=tags"
                     fetched_entity = self.metadata.client.get(endpoint)
                     if isinstance(fetched_entity, dict):
                         full_entity = fetched_entity
@@ -191,26 +191,8 @@ class GatekeeperOMClient:
                 if "tier1" in tag_fqn or "tier1" in tag_name:
                     has_tier1_tag = True
 
-            tier_value: Any = full_entity.get("tier")
-            if isinstance(tier_value, str):
-                import json
-                try:
-                    tier_value = json.loads(tier_value)
-                except Exception:
-                    pass
-
-            has_tier1_tier: bool = False
-            if isinstance(tier_value, dict):
-                tier_fqn = str(tier_value.get("tagFQN", "")).lower()
-                tier_name = str(tier_value.get("name", "")).lower()
-                if "tier1" in tier_fqn or "tier1" in tier_name:
-                    has_tier1_tier = True
-            elif isinstance(tier_value, str):
-                if "tier1" in tier_value.lower():
-                    has_tier1_tier = True
-
-            if has_tier1_tag or has_tier1_tier:
-                reasons.append("critical tag/tier: Tier1")
+            if has_tier1_tag:
+                reasons.append("critical tag: Tier1")
 
             if reasons:
                 impacted_assets.append(
