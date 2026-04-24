@@ -144,11 +144,26 @@ class GatekeeperOMClient:
                 continue
 
             reasons: list[str] = []
-            entity_type: str = str(node.get("entityType", "")).lower()
+            # Extract type, using both `type` and `entityType` as fallbacks
+            entity_type: str = str(node.get("type", node.get("entityType", ""))).lower()
             if entity_type in {"mlmodel", "dashboard", "pipeline"}:
                 reasons.append(f"critical entity type: {entity_type}")
 
-            tags_value: Any = node.get("tags", [])
+            node_id = node.get("id")
+            full_entity = node
+
+            if node_id and entity_type:
+                try:
+                    # Step B: Fetch full entity defensively
+                    endpoint = f"/{entity_type}s/{node_id}?fields=tags,tier"
+                    fetched_entity = self.metadata.client.get(endpoint)
+                    if isinstance(fetched_entity, dict):
+                        full_entity = fetched_entity
+                except Exception as e:
+                    self._logger.warning("Failed to fetch full entity for %s (%s): %s", node_id, entity_type, e)
+
+            # Step C: Inspect the full entity payload for tags and tier
+            tags_value: Any = full_entity.get("tags", [])
             has_tier1_tag: bool = False
             
             if isinstance(tags_value, str):
@@ -176,7 +191,7 @@ class GatekeeperOMClient:
                 if "tier1" in tag_fqn or "tier1" in tag_name:
                     has_tier1_tag = True
 
-            tier_value: Any = node.get("tier")
+            tier_value: Any = full_entity.get("tier")
             if isinstance(tier_value, str):
                 import json
                 try:
