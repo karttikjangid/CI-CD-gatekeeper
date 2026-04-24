@@ -47,6 +47,11 @@ These rules are mandatory for all upcoming project implementation work.
 - Before generating any complex logic, read rules.md and context.md.
 - Ground all implementation decisions in the CI_CD Gatekeeper Blueprint.md context.
 - When instructed with the phrase "Update the Context Ledger", update context.md sections accurately:
-  - Completed Modules
+- Completed Modules
   - Current Focus
   - Known Bugs/Issues
+
+## 9) OpenMetadata Python SDK & API Routing
+- **RULE 1 (THE /api MANDATE):** When configuring the OPENMETADATA_HOST environment variable or the hostPort parameter for the Python SDK, the URL MUST ALWAYS end with `/api` (e.g., `http://localhost:8585/api` or `https://<ngrok-id>.ngrok-free.app/api`).
+- **RULE 2 (THE TYPE-ERROR TRAP):** Do NOT strip `/api` from the URL. Stripping it causes the SDK to hit the OpenMetadata React frontend instead of the API backend. The frontend returns an HTML 200 OK response, which causes the SDK's version checker to crash with `TypeError: 'Response' object is not subscriptable`.
+- **RULE 3 (SDK IMMUTABILITY):** Never attempt to write custom Python logic to parse the Response object inside `api_client.py`. The OpenMetadata Python SDK natively handles JSON extraction; if a TypeError occurs, it is strictly a URL routing issue, not a Python code issue.

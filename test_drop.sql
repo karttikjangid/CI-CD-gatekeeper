@@ -1,1 +1,1 @@
-DROP TABLE raw_customer;
+DROP TABLE sample_data.ecommerce_db.shopify.raw_customer;
