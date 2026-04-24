@@ -67,19 +67,23 @@ if __name__ == "__main__":
         print("CRITICAL ERROR: Missing OPENMETADATA_HOST or OPENMETADATA_JWT_TOKEN.")
         sys.exit(1)
 
-    client = GatekeeperOMClient(
-        host=openmetadata_host,
-        jwt_token=openmetadata_jwt_token,
-    )
+    try:
+        client = GatekeeperOMClient(
+            host=openmetadata_host,
+            jwt_token=openmetadata_jwt_token,
+        )
 
-    all_impacts: list[dict[str, Any]] = []
-    total_critical_count: int = 0
+        all_impacts: list[dict[str, Any]] = []
+        total_critical_count: int = 0
 
-    for table in modified_tables:
-        critical_count, impacts = client.get_downstream_impact(table)
-        total_critical_count += critical_count
-        all_impacts.extend(impacts)
+        for table in modified_tables:
+            critical_count, impacts = client.get_downstream_impact(table)
+            total_critical_count += critical_count
+            all_impacts.extend(impacts)
 
-    print(f"Parsed {len(modified_tables)} modified table(s).")
-    print(f"Identified {total_critical_count} critical downstream impact(s).")
-    generate_markdown_report(all_impacts, total_critical_count)
+        print(f"Parsed {len(modified_tables)} modified table(s).")
+        print(f"Identified {total_critical_count} critical downstream impact(s).")
+        generate_markdown_report(all_impacts, total_critical_count)
+    except RuntimeError as exc:
+        print(f"CRITICAL ERROR: {exc}")
+        sys.exit(1)

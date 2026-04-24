@@ -13,7 +13,7 @@ from metadata.generated.schema.security.client.openMetadataJWTClientConfig impor
     OpenMetadataJWTClientConfig,
 )
 from metadata.ingestion.ometa.ometa_api import OpenMetadata
-from metadata.sdk.entities.tables import Tables
+from metadata.generated.schema.entity.data.table import Table
 
 
 class GatekeeperOMClient:
@@ -85,17 +85,17 @@ class GatekeeperOMClient:
 
         try:
             table_entity: Any | None = self.metadata.get_by_name(
-                entity=Tables,
+                entity=Table,
                 fqn=fqn,
                 fields=["tags"],
             )
         except Exception:
             self._logger.exception("Failed to retrieve table entity for FQN: %s", fqn)
-            return None
+            raise RuntimeError(f"Failed to retrieve table entity for FQN: {fqn}")
 
         if table_entity is None:
             self._logger.warning("Table entity not found for FQN: %s", fqn)
-            return None
+            raise RuntimeError(f"Table entity not found for FQN: {fqn}")
         return table_entity
 
     def get_downstream_impact(self, table_fqn: str) -> tuple[int, list[dict[str, Any]]]:
@@ -112,21 +112,25 @@ class GatekeeperOMClient:
 
         table_entity: Any | None = self.get_table_entity(table_fqn)
         if table_entity is None:
-            return 0, []
+            raise RuntimeError(f"Unable to resolve table entity for FQN: {table_fqn}")
 
         table_id_value: Any = getattr(table_entity, "id", None)
-        table_id: str = str(getattr(table_id_value, "__root__", table_id_value) or "")
-        if not table_id:
+        clean_id: str = (
+            str(table_id_value.root)
+            if hasattr(table_id_value, "root")
+            else str(getattr(table_id_value, "__root__", table_id_value) or "")
+        )
+        if not clean_id:
             self._logger.warning("Table id missing for FQN: %s", table_fqn)
-            return 0, []
+            raise RuntimeError(f"Table id missing for FQN: {table_fqn}")
 
         try:
             lineage_response: Any = self.metadata.client.get(
-                f"/lineage/table/{table_id}?downstreamDepth=3"
+                f"/lineage/table/{clean_id}?downstreamDepth=3"
             )
         except Exception:
             self._logger.exception("Failed lineage lookup for FQN: %s", table_fqn)
-            return 0, []
+            raise RuntimeError(f"Failed lineage lookup for FQN: {table_fqn}")
 
         nodes: list[Any] = []
         if isinstance(lineage_response, dict):
@@ -140,22 +144,55 @@ class GatekeeperOMClient:
                 continue
 
             reasons: list[str] = []
-            entity_type: str = str(node.get("entityType", "")).lower()
+            # Extract type, using both `type` and `entityType` as fallbacks
+            entity_type: str = str(node.get("type", node.get("entityType", ""))).lower()
             if entity_type in {"mlmodel", "dashboard", "pipeline"}:
                 reasons.append(f"critical entity type: {entity_type}")
 
-            tags_value: Any = node.get("tags", [])
+            node_id = node.get("id")
+            full_entity = node
+
+            if node_id and entity_type:
+                try:
+                    # Step B: Fetch full entity defensively
+                    endpoint = f"/{entity_type}s/{node_id}?fields=tags"
+                    fetched_entity = self.metadata.client.get(endpoint)
+                    if isinstance(fetched_entity, dict):
+                        full_entity = fetched_entity
+                except Exception as e:
+                    self._logger.warning("Failed to fetch full entity for %s (%s): %s", node_id, entity_type, e)
+
+            # Step C: Inspect the full entity payload for tags and tier
+            tags_value: Any = full_entity.get("tags", [])
+            has_tier1_tag: bool = False
+            
+            if isinstance(tags_value, str):
+                import json
+                try:
+                    tags_value = json.loads(tags_value)
+                except Exception:
+                    pass
+
             if isinstance(tags_value, list):
-                has_tier1_tag: bool = any(
-                    isinstance(tag, dict)
-                    and (
-                        "tier1" in str(tag.get("tagFQN", "")).lower()
-                        or "tier1" in str(tag.get("name", "")).lower()
-                    )
-                    for tag in tags_value
-                )
-                if has_tier1_tag:
-                    reasons.append("critical tag: Tier1")
+                for tag in tags_value:
+                    if isinstance(tag, dict):
+                        tag_fqn = str(tag.get("tagFQN", "")).lower()
+                        tag_name = str(tag.get("name", "")).lower()
+                        if "tier1" in tag_fqn or "tier1" in tag_name:
+                            has_tier1_tag = True
+                            break
+                    elif isinstance(tag, str):
+                        if "tier1" in tag.lower():
+                            has_tier1_tag = True
+                            break
+            elif isinstance(tags_value, dict):
+                tag_fqn = str(tags_value.get("tagFQN", "")).lower()
+                tag_name = str(tags_value.get("name", "")).lower()
+                if "tier1" in tag_fqn or "tier1" in tag_name:
+                    has_tier1_tag = True
+
+            if has_tier1_tag:
+                reasons.append("critical tag: Tier1")
 
             if reasons:
                 impacted_assets.append(
