@@ -31,6 +31,10 @@ def fetch_schema(fqn: str) -> str:
     token = os.environ.get("OPENMETADATA_JWT_TOKEN", "")
     host = os.environ.get("OPENMETADATA_HOST", "http://localhost:8585/api").rstrip("/")
     
+    if not host.endswith("/api"):
+        logger.error("OPENMETADATA_HOST must end with '/api' (THE /api MANDATE)")
+        sys.exit(0)
+        
     url = f"{host}/v1/tables/name/{fqn}"
     headers = {
         "Authorization": f"Bearer {token}"
