@@ -149,17 +149,35 @@ class GatekeeperOMClient:
                 reasons.append(f"critical entity type: {entity_type}")
 
             tags_value: Any = node.get("tags", [])
+            has_tier1_tag: bool = False
+            
+            if isinstance(tags_value, str):
+                import json
+                try:
+                    tags_value = json.loads(tags_value)
+                except Exception:
+                    pass
+
             if isinstance(tags_value, list):
-                has_tier1_tag: bool = any(
-                    isinstance(tag, dict)
-                    and (
-                        "tier1" in str(tag.get("tagFQN", "")).lower()
-                        or "tier1" in str(tag.get("name", "")).lower()
-                    )
-                    for tag in tags_value
-                )
-                if has_tier1_tag:
-                    reasons.append("critical tag: Tier1")
+                for tag in tags_value:
+                    if isinstance(tag, dict):
+                        tag_fqn = str(tag.get("tagFQN", "")).lower()
+                        tag_name = str(tag.get("name", "")).lower()
+                        if "tier1" in tag_fqn or "tier1" in tag_name:
+                            has_tier1_tag = True
+                            break
+                    elif isinstance(tag, str):
+                        if "tier1" in tag.lower():
+                            has_tier1_tag = True
+                            break
+            elif isinstance(tags_value, dict):
+                tag_fqn = str(tags_value.get("tagFQN", "")).lower()
+                tag_name = str(tags_value.get("name", "")).lower()
+                if "tier1" in tag_fqn or "tier1" in tag_name:
+                    has_tier1_tag = True
+
+            if has_tier1_tag:
+                reasons.append("critical tag: Tier1")
 
             if reasons:
                 impacted_assets.append(
