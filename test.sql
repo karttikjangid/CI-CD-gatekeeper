@@ -1,0 +1,1 @@
+DROP TABLE sample_data.ecommerce_db.shopify.raw_customer;
