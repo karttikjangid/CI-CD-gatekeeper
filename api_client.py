@@ -91,11 +91,11 @@ class GatekeeperOMClient:
             )
         except Exception:
             self._logger.exception("Failed to retrieve table entity for FQN: %s", fqn)
-            return None
+            raise RuntimeError(f"Failed to retrieve table entity for FQN: {fqn}")
 
         if table_entity is None:
             self._logger.warning("Table entity not found for FQN: %s", fqn)
-            return None
+            raise RuntimeError(f"Table entity not found for FQN: {fqn}")
         return table_entity
 
     def get_downstream_impact(self, table_fqn: str) -> tuple[int, list[dict[str, Any]]]:
@@ -112,21 +112,25 @@ class GatekeeperOMClient:
 
         table_entity: Any | None = self.get_table_entity(table_fqn)
         if table_entity is None:
-            return 0, []
+            raise RuntimeError(f"Unable to resolve table entity for FQN: {table_fqn}")
 
         table_id_value: Any = getattr(table_entity, "id", None)
-        table_id: str = str(getattr(table_id_value, "__root__", table_id_value) or "")
-        if not table_id:
+        clean_id: str = (
+            str(table_id_value.root)
+            if hasattr(table_id_value, "root")
+            else str(getattr(table_id_value, "__root__", table_id_value) or "")
+        )
+        if not clean_id:
             self._logger.warning("Table id missing for FQN: %s", table_fqn)
-            return 0, []
+            raise RuntimeError(f"Table id missing for FQN: {table_fqn}")
 
         try:
             lineage_response: Any = self.metadata.client.get(
-                f"/lineage/table/{table_id}?downstreamDepth=3"
+                f"/lineage/table/{clean_id}?downstreamDepth=3"
             )
         except Exception:
             self._logger.exception("Failed lineage lookup for FQN: %s", table_fqn)
-            return 0, []
+            raise RuntimeError(f"Failed lineage lookup for FQN: {table_fqn}")
 
         nodes: list[Any] = []
         if isinstance(lineage_response, dict):
