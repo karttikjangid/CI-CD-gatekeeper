@@ -55,7 +55,7 @@ jobs:
 
       - name: Execute Lineage Assessment Script
         if: steps.changed-files.outputs.files != ''
-        id: assess
+        id: gatekeeper_check
         env:
           OPENMETADATA_HOST: ${{ secrets.OPENMETADATA_HOST }}
           OPENMETADATA_JWT_TOKEN: ${{ secrets.OPENMETADATA_JWT_TOKEN }}
@@ -124,8 +124,17 @@ jobs:
             gh pr comment "$PR_NUMBER" --body-file report.md --edit-last --create-if-none
           fi
 
-          if [[ "${{ steps.assess.outputs.impact }}" == "true" ]]; then
+          if [[ "${{ steps.gatekeeper_check.outputs.impact }}" == "true" ]]; then
             echo "CRITICAL ERROR: High-risk downstream assets detected in the blast radius."
             echo "Merge sequence blocked. Please review the PR comments."
             exit 1
           fi
+
+      - name: Auto-Remediate Blast Radius
+        if: ${{ failure() && steps.gatekeeper_check.outcome == 'failure' }}
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENMETADATA_HOST: ${{ secrets.OPENMETADATA_HOST }}
+          OPENMETADATA_JWT_TOKEN: ${{ secrets.OPENMETADATA_JWT_TOKEN }}
+          ENV_MODE: "production"
+        run: python remediation_agent.py
