@@ -13,7 +13,7 @@ from metadata.generated.schema.security.client.openMetadataJWTClientConfig impor
     OpenMetadataJWTClientConfig,
 )
 from metadata.ingestion.ometa.ometa_api import OpenMetadata
-from metadata.sdk.entities.tables import Tables
+from metadata.generated.schema.entity.data.table import Table
 
 
 class GatekeeperOMClient:
@@ -85,7 +85,7 @@ class GatekeeperOMClient:
 
         try:
             table_entity: Any | None = self.metadata.get_by_name(
-                entity=Tables,
+                entity=Table,
                 fqn=fqn,
                 fields=["tags"],
             )
