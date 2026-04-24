@@ -40,7 +40,10 @@ These rules are mandatory for all upcoming project implementation work.
 - External calls (HTTP, GitHub integration) must be isolated behind interfaces/wrappers.
 - Add tests for parser edge cases, API error handling, and merge-block decision logic.
 
-## 7) Copilot Operating Protocol (Mandatory)
+## 7) SQL Dialect Strictness
+- Always specify explicit dialects (e.g., `read="bigquery"`) when calling `sqlglot.parse_one()` to avoid fallback warnings with dialect-specific syntax like `ARRAY<STRUCT>`.
+
+## 8) Copilot Operating Protocol (Mandatory)
 - Before generating any complex logic, read rules.md and context.md.
 - Ground all implementation decisions in the CI_CD Gatekeeper Blueprint.md context.
 - When instructed with the phrase "Update the Context Ledger", update context.md sections accurately:

@@ -21,7 +21,10 @@ Last Updated: 2026-04-24
   - SQL ingestion and mutation-target extraction flow integration
   - Downstream impact aggregation and total critical count calculation
   - Markdown report generation to `report.md` with CI exit signaling (`0` safe, `100` block), including zero-mutation success reports
-
+- Remediation module implemented in `remediation_agent.py` and `llm_client.py` (Phase 5):
+  - Extracted LLM logic to decoupled `llm_client.py` supporting `ENV_MODE` (local Ollama / prod Gemini).
+  - Implemented strictly validated deterministic patch generation appended to `report.md`.
+  - Added strict SQL dialect configuration (`read="bigquery"`) to sqlglot to prevent syntax fallback warnings on `ARRAY<STRUCT>`.
 ## Current Focus
 - GitHub Actions YAML:
   - Create workflow trigger and SQL path filters for PR events

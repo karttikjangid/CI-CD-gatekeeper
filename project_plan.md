@@ -64,6 +64,16 @@ Operationalize the gatekeeper in PR CI so critical blast radius blocks merges wi
 - CI flow is fully specified from changed-file detection to merge block decision.
 - Developer feedback loop is clearly documented.
 
+### Phase 5: Autonomous Remediation
+**Primary Goal**
+Introduce an agent to generate backward-compatible SQL patches (e.g., `CREATE VIEW`) autonomously.
+
+**Scope**
+- Fetch table schema via OpenMetadata APIs.
+- Call local LLM (Ollama) or Gemini based on ENV_MODE to generate SQL patches.
+- Validate generated SQL structure strictly against BigQuery dialect.
+- Append generated patch to `report.md`.
+
 ## Definition of Completion
 - Day 1 through Day 3 artifacts are documented and implementation-ready.
 - Standards in rules.md and state tracking in context.md are integrated into the development workflow.
