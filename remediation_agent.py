@@ -79,7 +79,8 @@ Schema:
     llm_output = llm_output.strip()
     
     try:
-        sqlglot.parse_one(llm_output, read="bigquery")
+        parsed = sqlglot.parse_one(llm_output, read="bigquery")
+        llm_output = parsed.sql(dialect="bigquery", pretty=True)
     except sqlglot.errors.ParseError as e:
         logger.error(f"SQL validation ParseError: {e}")
         sys.exit(0)
