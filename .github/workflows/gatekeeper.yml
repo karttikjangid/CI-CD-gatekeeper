@@ -113,6 +113,15 @@ jobs:
           mv combined_report.md report.md
           echo "impact=$impact" >> "$GITHUB_OUTPUT"
 
+      - name: Auto-Remediate Blast Radius
+        if: steps.gatekeeper_check.outputs.impact == 'true'
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENMETADATA_HOST: ${{ secrets.OPENMETADATA_HOST }}
+          OPENMETADATA_JWT_TOKEN: ${{ secrets.OPENMETADATA_JWT_TOKEN }}
+          ENV_MODE: "production"
+        run: python remediation_agent.py
+
       - name: Post PR Comment and Enforce Merge Block
         if: steps.changed-files.outputs.files != '' && always()
         env:
@@ -129,12 +138,3 @@ jobs:
             echo "Merge sequence blocked. Please review the PR comments."
             exit 1
           fi
-
-      - name: Auto-Remediate Blast Radius
-        if: ${{ failure() && steps.gatekeeper_check.outcome == 'failure' }}
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          OPENMETADATA_HOST: ${{ secrets.OPENMETADATA_HOST }}
-          OPENMETADATA_JWT_TOKEN: ${{ secrets.OPENMETADATA_JWT_TOKEN }}
-          ENV_MODE: "production"
-        run: python remediation_agent.py
