@@ -73,6 +73,11 @@ Schema:
     
     llm_output = call_llm(prompt)
     
+    # Programmatic sanitization pass
+    llm_output = re.sub(r"^```[sS][qQ][lL]?\s*", "", llm_output)
+    llm_output = re.sub(r"\s*```$", "", llm_output)
+    llm_output = llm_output.strip()
+    
     try:
         sqlglot.parse_one(llm_output, read="bigquery")
     except sqlglot.errors.ParseError as e:
