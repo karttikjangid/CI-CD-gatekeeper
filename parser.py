@@ -18,7 +18,6 @@ def extract_modified_tables(sql_content: str, dialect: str = "snowflake") -> set
         A set of table names that are modified by the SQL content.
     """
     modified_tables: set[str] = set()
-    alter_table_cls = getattr(exp, "AlterTable", None)
 
     try:
         statements = sqlglot.parse(sql_content, read=dialect)
@@ -47,9 +46,11 @@ def extract_modified_tables(sql_content: str, dialect: str = "snowflake") -> set
             direct_target = statement.args.get("this")
             if isinstance(direct_target, exp.Table):
                 table_node = direct_target
-        elif alter_table_cls is not None and isinstance(statement, alter_table_cls):
+        elif isinstance(statement, exp.Alter):
             alter_target = statement.args.get("this")
-            if isinstance(alter_target, exp.Table):
+            actions = statement.args.get("actions", [])
+            has_drop = any(isinstance(action, exp.Drop) for action in actions)
+            if has_drop and isinstance(alter_target, exp.Table):
                 table_node = alter_target
 
         if table_node is not None:
