@@ -16,7 +16,7 @@ def parse_report() -> tuple[str, str]:
         logger.error(f"Failed to read report.md: {e}")
         sys.exit(0)
         
-    pattern = r"^\s*\|?\s*([a-zA-Z0-9_]+)\s*\|\s*([a-zA-Z0-9_.]+)\s*\|"
+    pattern = r"^\s*\|?\s*([a-zA-Z0-9_.]+)\s*\|\s*([a-zA-Z0-9_.]+)\s*\|"
     match = re.search(pattern, content, re.MULTILINE)
     
     if match is None:
