@@ -117,6 +117,7 @@ jobs:
         if: steps.gatekeeper_check.outputs.impact == 'true'
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
           OPENMETADATA_HOST: ${{ secrets.OPENMETADATA_HOST }}
           OPENMETADATA_JWT_TOKEN: ${{ secrets.OPENMETADATA_JWT_TOKEN }}
           ENV_MODE: "production"

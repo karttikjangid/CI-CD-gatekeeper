@@ -2,3 +2,4 @@ requests
 sqlglot
 PyGithub
 openai
+google-genai
