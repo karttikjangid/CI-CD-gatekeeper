@@ -14,7 +14,7 @@
 
 ## 📸 The Magic in Action
 
-![Demo of Auto-Medic in Action](./assets/demo_screenshot.png)
+![Demo of Auto-Medic in Action](./assets/ss_gatekeeper.png)
 
 ---
 
