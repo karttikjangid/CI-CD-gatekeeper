@@ -7,12 +7,12 @@ import sqlglot.expressions as exp
 from sqlglot.errors import ParseError
 
 
-def extract_modified_tables(sql_content: str, dialect: str = "snowflake") -> set[str]:
+def extract_modified_tables(sql_content: str, dialect: str = "bigquery") -> set[str]:
     """Extract tables targeted by DML/DDL operations while ignoring SELECT statements.
 
     Args:
         sql_content: The raw SQL string to parse.
-        dialect: The SQL dialect to use for parsing, defaults to 'snowflake'.
+        dialect: The SQL dialect to use for parsing, defaults to 'bigquery'.
 
     Returns:
         A set of table names that are modified by the SQL content.
