@@ -3,3 +3,5 @@ sqlglot
 PyGithub
 openai
 google-genai
+openmetadata-ingestion~=1.12.0
+cachetools

@@ -16,6 +16,10 @@
 
 ![Demo of Auto-Medic in Action](./assets/ss_gatekeeper.png)
 
+### 🔔 Real-Time Slack Telemetry
+
+![Slack Alert](./assets/slack_alert.png)
+
 ---
 
 ## 🩺 The "Before & After"
@@ -69,6 +73,7 @@ flowchart TD
     D -->|Ollama Local / Gemini Prod| E[🛠️ Generate SQL Patch]
     E -->|sqlglot Validation| F(📝 GitHub PR Comment)
     F -->|Appends CREATE VIEW| A
+    F -->|Triggers Webhook| G(🔔 Slack Alert)
 ```
 
 ---
@@ -93,6 +98,10 @@ This is not a basic API wrapper. Every layer is engineered for correctness and r
 - **Programmatic sanitization:** A post-generation regex pass strips any markdown code fences (` ```sql `) the model may have hallucinated, before the output ever touches the validator.
 - **AST-level SQL validation:** The sanitized output is parsed by `sqlglot` using the **BigQuery dialect** (`read="bigquery"`, `dialect="bigquery"`). If the output is syntactically invalid SQL, the exception is caught, the error is logged with the full offending SQL string, and the agent exits cleanly (`sys.exit(0)`). **The CI pipeline is never broken by LLM instability.**
 - **Hybrid LLM Routing:** The agent routes to **local Ollama** in `ENV_MODE=local` (free, offline development) and automatically escalates to **Google Gemini** or **OpenRouter** in production — with multi-level fallback and detailed telemetry logging at every hop.
+
+### 🔔 Real-Time Slack Alerts
+
+The moment a Tier-1 blast radius event is intercepted and the PR merge is blocked, Auto-Medic fires a **direct Slack webhook notification** to the data engineering team. The alert carries the PR number, a human-readable summary of the schema threat, and a deep link directly to the PR comment containing the remediation patch — so the on-call engineer has full context in seconds, not discovery minutes later via a broken dashboard.
 
 ### 🛡️ Expand-Contract Migration Pattern Enforcement
 
@@ -154,6 +163,14 @@ ngrok http 8585
 python remediation_agent.py
 ```
 
+### 5. Configure Slack Telemetry *(Optional for CI/CD)*
+
+1. Create an **Incoming Webhook** in your Slack workspace at [api.slack.com/apps](https://api.slack.com/apps).
+2. Navigate to your GitHub Repository → **Settings** → **Secrets and variables** → **Actions**.
+3. Click **New repository secret**, name it `SLACK_WEBHOOK_URL`, and paste your webhook URL.
+
+> **Note:** If you do not configure this secret, the core Gatekeeper will still function — the Slack notification step will fail gracefully without disrupting the pipeline.
+
 ---
 
 ## 🗺️ Roadmap: What We Build Next
@@ -162,7 +179,6 @@ Auto-Medic's MVP proves the core loop. The production-grade platform looks like 
 
 | Milestone | Feature | Value |
 |---|---|---|
-| **v1.1** | 🔔 **Slack / PagerDuty Alerts** | Notify the data platform team in real-time when a Tier-1 blast radius event is intercepted, with the full impact report in the Slack message. |
 | **v1.2** | 🤖 **Auto-Commit the Patch** | Instead of posting the patch as a PR comment, Auto-Medic opens a **sibling PR** with the validated `CREATE VIEW` already committed and linked to the original blocked PR. |
 | **v1.3** | 🌿 **Native dbt Integration** | Parse `dbt` manifest files directly to resolve compiled model dependencies, enabling lineage traversal across the full dbt DAG — not just raw SQL files. |
 | **v2.0** | 📊 **Blast Radius Heatmap** | Generate a live visual lineage graph (rendered as SVG in the PR comment) showing every downstream asset colored by risk tier. |
