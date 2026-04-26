@@ -139,3 +139,10 @@ jobs:
             echo "Merge sequence blocked. Please review the PR comments."
             exit 1
           fi
+
+      - name: Send Slack Alert
+        if: ${{ failure() && steps.gatekeeper_check.outcome == 'failure' }}
+        run: |
+          curl -X POST -H 'Content-type: application/json' \
+          --data '{"text":"🚨 *CRITICAL DATAOPS ALERT* 🚨\nDestructive schema change detected in PR #${{ github.event.pull_request.number }}.\nAuto-Medic has intercepted the PR and posted a zero-downtime remediation patch.\n🔗 Review it here: ${{ github.event.pull_request.html_url }}"}' \
+          ${{ secrets.SLACK_WEBHOOK_URL }}
